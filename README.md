@@ -1,6 +1,8 @@
-# AWDP 自动化攻防演练平台
+# Patronus AWDP — 自动化攻防演练平台
 
 一个基于 Web 的自动化攻防演练（AWDP）竞赛平台，支持多队伍并发比赛、自动化防御评估、容器编排和 3D 可视化大屏。
+
+> **首版使用 AI (DeepSeek V4 Flash + Claude Code Agent) 以 vibe coding 方式生成，后期将持续使用人工优化迭代。**
 
 ## 功能
 
