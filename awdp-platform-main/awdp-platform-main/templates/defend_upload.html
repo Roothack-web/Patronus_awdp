@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="row">
+  <div class="col-md-8">
+    <h2>为 "{{ challenge.title }}" 上传防护包</h2>
+    <div class="alert alert-info">
+      上传补丁包 (.tar.gz)，需包含 <code>update.sh</code>（将补丁部署到 <code>/home/ctf/pwn</code>）。
+      上传后平台将自动评估修复效果。
+    </div>
+
+    <div class="card mb-3">
+      <div class="card-body">
+        <h5 class="card-title">补丁包要求</h5>
+        <ol>
+          <li>包含 <code>update.sh</code> — 负责在容器内应用补丁</li>
+          <li>包含替换后的二进制文件</li>
+          <li><code>update.sh</code> 将文件部署到 <code>/home/ctf/pwn</code></li>
+        </ol>
+        <p class="small text-muted mb-0">示例 update.sh:</p>
+        <pre class="small bg-light p-2 rounded"><code>#!/bin/sh
+chmod +x pwn
+mv -f pwn /home/ctf/pwn</code></pre>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-body">
+        <form method="post" enctype="multipart/form-data">
+          {{ form.hidden_tag() }}
+          <div class="mb-3">
+            {{ form.package.label(class_='form-label') }}
+            {{ form.package(class_='form-control') }}
+            {% for error in form.package.errors %}
+              <div class="text-danger small">{{ error }}</div>
+            {% endfor %}
+          </div>
+          <p class="text-muted small">剩余提交次数: {{ max_attempts - attempt_count }} / {{ max_attempts }}</p>
+          <p>{{ form.submit(class_='btn btn-primary') }}</p>
+        </form>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card">
+      <div class="card-body">
+        <h5 class="card-title">题目信息</h5>
+        <table class="table table-sm">
+          <tr><td>题目</td><td>{{ challenge.title }}</td></tr>
+          <tr><td>类别</td><td><span class="badge bg-{{ 'danger' if challenge.category == 'pwn' else 'info' }}">{{ challenge.category.upper() }}</span></td></tr>
+          <tr><td>防御基础分</td><td>{{ challenge.fix_base_score or 300 }}</td></tr>
+        </table>
+        <a href="/challenge/{{ challenge.id }}" class="btn btn-sm btn-outline-secondary">返回题目</a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

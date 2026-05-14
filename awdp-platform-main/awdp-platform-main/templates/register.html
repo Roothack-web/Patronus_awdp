@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-6 col-lg-4">
+    <h2 class="mb-4">注册队伍</h2>
+    <form method="post">
+      {{ form.hidden_tag() }}
+      <div class="mb-3">
+        {{ form.name.label(class_='form-label') }}
+        {{ form.name(class_='form-control', placeholder='输入队伍名') }}
+        {% for error in form.name.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+      </div>
+      <div class="mb-3">
+        {{ form.password.label(class_='form-label') }}
+        {{ form.password(class_='form-control', placeholder='输入密码') }}
+      </div>
+      <div class="mb-3">
+        {{ form.password2.label(class_='form-label') }}
+        {{ form.password2(class_='form-control', placeholder='重复密码') }}
+      </div>
+      <p>{{ form.submit(class_='btn btn-primary w-100') }}</p>
+    </form>
+    <p class="text-center text-muted small">已有队伍？<a href="/auth/login">登录</a></p>
+  </div>
+</div>
+{% endblock %}

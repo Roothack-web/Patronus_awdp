@@ -1,0 +1,106 @@
+{% extends 'base.html' %}
+{% block content %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="/">比赛列表</a></li>
+    <li class="breadcrumb-item active">{{ contest.name }}</li>
+  </ol>
+</nav>
+
+<div class="row">
+  <div class="col-md-8">
+    <h2>{{ contest.name }}</h2>
+    {% if contest.description %}<p class="text-muted">{{ contest.description }}</p>{% endif %}
+    <p>
+      {% if contest.status == 'running' %}
+        <span class="badge bg-success fs-6">进行中</span>
+      {% elif contest.status == 'finished' %}
+        <span class="badge bg-secondary fs-6">已结束</span>
+      {% else %}
+        <span class="badge bg-warning text-dark fs-6">未开始</span>
+      {% endif %}
+      {% if contest.start_at %}
+        <span class="ms-3 text-muted small">开始: {{ contest.start_at.strftime('%Y-%m-%d %H:%M') }}</span>
+      {% endif %}
+      {% if contest.end_at %}
+        <span class="ms-3 text-muted small">结束: {{ contest.end_at.strftime('%Y-%m-%d %H:%M') }}</span>
+      {% endif %}
+    </p>
+
+    <h4 class="mt-4 mb-3">题目列表</h4>
+    {% if challenges %}
+    <div class="row">
+      {% for c in challenges %}
+      <div class="col-md-6 mb-3">
+        <div class="card h-100">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-start">
+              <div>
+                <h6 class="card-title mb-1">
+                  <a href="/challenge/{{ c.id }}" class="text-decoration-none">{{ c.title }}</a>
+                  <small class="badge bg-{{ 'danger' if c.category == 'pwn' else 'info' }}">{{ c.category.upper() }}</small>
+                </h6>
+                <p class="mb-0 small text-muted">{{ (c.description or '')[:100] }}</p>
+              </div>
+              <div class="text-end">
+                <span class="badge bg-dark">{{ c.initial_score or c.points }} 分</span>
+                {% if team_containers and c.id in team_containers %}
+                  {% set ct = team_containers[c.id] %}
+                  {% if ct.status == 'running' %}
+                    <span class="badge bg-success d-block mt-1">运行中</span>
+                  {% elif ct.status == 'stopped' %}
+                    <span class="badge bg-secondary d-block mt-1">已停止</span>
+                  {% endif %}
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <p class="text-muted">该比赛暂无可用题目</p>
+    {% endif %}
+  </div>
+
+  <div class="col-md-4">
+    <div class="card mb-3">
+      <div class="card-body">
+        <h5 class="card-title">轮次</h5>
+        {% if rounds %}
+          <table class="table table-sm mb-0">
+            <thead><tr><th>#</th><th>名称</th><th>状态</th></tr></thead>
+            <tbody>
+            {% for r in rounds %}
+              <tr>
+                <td>{{ r.round_number }}</td>
+                <td class="small">{{ r.name }}</td>
+                <td>
+                  {% if r.status == 'running' %}
+                    <span class="badge bg-success">进行中</span>
+                  {% elif r.status == 'finished' %}
+                    <span class="badge bg-secondary">已结束</span>
+                  {% else %}
+                    <span class="badge bg-warning text-dark">待开始</span>
+                  {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+            </tbody>
+          </table>
+        {% else %}
+          <p class="text-muted mb-0">暂无轮次</p>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-body">
+        <h5 class="card-title">操作</h5>
+        <a href="/leaderboard?contest_id={{ contest.id }}" class="btn btn-outline-primary btn-sm w-100 mb-2">查看排行榜</a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

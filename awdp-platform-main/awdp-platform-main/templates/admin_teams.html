@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h2 class="mb-0">管理员 - 队伍管理</h2>
+  <a class="btn btn-sm btn-secondary" href="/admin">管理首页</a>
+</div>
+
+<div class="card">
+  <div class="card-body p-0">
+    <table class="table table-hover mb-0">
+      <thead>
+        <tr><th>ID</th><th>队伍名</th><th>总分</th><th>攻击分</th><th>防御分</th><th>管理员</th><th>注册时间</th><th>操作</th></tr>
+      </thead>
+      <tbody>
+      {% for t in teams %}
+        <tr>
+          <td>{{ t.id }}</td>
+          <td><strong>{{ t.name }}</strong></td>
+          <td>{{ "%.1f"|format(t.score or 0) }}</td>
+          <td>{{ "%.1f"|format(t.attack_score or 0) }}</td>
+          <td>{{ "%.1f"|format(t.defense_score or 0) }}</td>
+          <td>{% if t.is_admin %}<span class="badge bg-danger">是</span>{% else %}<span class="badge bg-secondary">否</span>{% endif %}</td>
+          <td class="small">{{ t.created_at }}</td>
+          <td>
+            <form method="post" action="/admin/teams/{{ t.id }}/toggle-admin" style="display:inline">
+              <button class="btn btn-sm btn-outline-warning">{{ '取消管理' if t.is_admin else '设为管理' }}</button>
+            </form>
+            <form method="post" action="/admin/teams/{{ t.id }}/reset-password" style="display:inline"
+                  onsubmit="return confirm('确定重置密码？')">
+              <input type="hidden" name="new_password" value="awdp2026">
+              <button class="btn btn-sm btn-outline-danger">重置密码</button>
+            </form>
+          </td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-4" style="max-width:500px;">
+  <h3>队伍资料</h3>
+  <div class="card mb-4">
+    <div class="card-body">
+      <p><strong>队伍名：</strong>{{ team.name }}</p>
+      <p><strong>积分：</strong>{{ team.score }}</p>
+      <p><strong>攻击分：</strong>{{ team.attack_score }}</p>
+      <p><strong>防御分：</strong>{{ team.defense_score }}</p>
+      <p><strong>注册时间：</strong>{{ team.created_at.strftime('%Y-%m-%d %H:%M') }}</p>
+      <p><strong>Token：</strong><code>{{ team.token or '未生成' }}</code></p>
+    </div>
+  </div>
+  <h4>修改密码</h4>
+  <form method="POST">
+    {{ form.hidden_tag() }}
+    <div class="mb-2">
+      {{ form.old_password.label(class="form-label") }}
+      {{ form.old_password(class="form-control") }}
+      {% for error in form.old_password.errors %}<small class="text-danger">{{ error }}</small>{% endfor %}
+    </div>
+    <div class="mb-2">
+      {{ form.new_password.label(class="form-label") }}
+      {{ form.new_password(class="form-control") }}
+      {% for error in form.new_password.errors %}<small class="text-danger">{{ error }}</small>{% endfor %}
+    </div>
+    <div class="mb-2">
+      {{ form.new_password2.label(class="form-label") }}
+      {{ form.new_password2(class="form-control") }}
+      {% for error in form.new_password2.errors %}<small class="text-danger">{{ error }}</small>{% endfor %}
+    </div>
+    {{ form.submit(class="btn btn-primary") }}
+  </form>
+</div>
+{% endblock %}

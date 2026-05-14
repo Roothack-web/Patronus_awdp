@@ -1,0 +1,17 @@
+[Unit]
+Description=AWDP Platform Scheduler
+After=network.target awdp-web.service
+Wants=awdp-web.service
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/awdp
+Environment=PATH=/opt/awdp/venv/bin:/usr/bin
+Environment=PYTHONPATH=/opt/awdp
+ExecStart=/opt/awdp/venv/bin/python /opt/awdp/services/scheduler.py
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,8 @@
+body { font-family: Arial, sans-serif; margin: 0; padding: 0; }
+header { background: #222; color: #fff; padding: 10px 20px; display:flex; align-items:center; justify-content:space-between }
+header a { color: #fff; text-decoration: none }
+nav a { margin-left: 12px; color:#ddd }
+main { padding: 20px }
+.flashes { list-style: none; padding: 0; }
+.flashes li { background: #ffeb3b; padding: 8px; margin-bottom:8px }
+footer { padding: 10px 20px; background:#f4f4f4; text-align:center }

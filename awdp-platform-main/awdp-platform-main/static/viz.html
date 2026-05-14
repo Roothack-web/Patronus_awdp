@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>砺剑AWDp — 大屏可视化</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  background: #08080e;
+  color: #00ff41;
+  font-family: 'Courier New', monospace;
+  overflow: hidden;
+  height: 100vh;
+  width: 100vw;
+  user-select: none;
+}
+
+/* ─── Top Bar ─── */
+.top-bar {
+  position: fixed; top: 0; left: 0; right: 0;
+  height: 56px;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 30px;
+  background: linear-gradient(180deg, rgba(0,255,65,0.06) 0%, transparent);
+  border-bottom: 1px solid rgba(0,255,65,0.15);
+  z-index: 100;
+}
+.top-bar .title {
+  font-size: 22px; font-weight: bold;
+  text-shadow: 0 0 20px rgba(0,255,65,0.5);
+  letter-spacing: 4px;
+}
+.top-bar .info {
+  display: flex; align-items: center; gap: 30px;
+  font-size: 14px; color: rgba(0,255,65,0.7);
+}
+.top-bar .info span { color: #00ff41; font-weight: bold; }
+.top-bar .round-badge {
+  background: rgba(0,255,65,0.1);
+  border: 1px solid rgba(0,255,65,0.3);
+  padding: 4px 14px; border-radius: 4px;
+}
+
+/* ─── Main Canvas ─── */
+#scene {
+  position: fixed; top: 56px; left: 0; right: 320px; bottom: 160px;
+  background: radial-gradient(ellipse at 50% 50%, #0c0c1a 0%, #06060a 100%);
+}
+
+/* ─── Scoreboard ─── */
+.scoreboard {
+  position: fixed; top: 56px; right: 0; width: 320px;
+  bottom: 160px;
+  background: rgba(0,255,65,0.02);
+  border-left: 1px solid rgba(0,255,65,0.1);
+  padding: 16px;
+  overflow-y: auto;
+  z-index: 50;
+}
+.scoreboard .sb-title {
+  font-size: 12px; color: rgba(0,255,65,0.5);
+  letter-spacing: 2px; margin-bottom: 12px;
+  border-bottom: 1px solid rgba(0,255,65,0.1);
+  padding-bottom: 8px;
+}
+.sb-row {
+  display: flex; align-items: center;
+  padding: 8px 10px; margin-bottom: 4px;
+  border-radius: 4px;
+  background: rgba(0,255,65,0.03);
+  border: 1px solid transparent;
+  transition: all 0.3s;
+}
+.sb-row:hover { border-color: rgba(0,255,65,0.2); }
+.sb-rank { width: 28px; font-size: 14px; font-weight: bold; color: rgba(0,255,65,0.6); }
+.sb-rank.top1 { color: #ffd700; text-shadow: 0 0 10px #ffd70088; }
+.sb-rank.top2 { color: #c0c0c0; text-shadow: 0 0 8px #c0c0c088; }
+.sb-rank.top3 { color: #cd7f32; text-shadow: 0 0 8px #cd7f3288; }
+.sb-name { flex: 1; font-size: 13px; margin-left: 8px; }
+.sb-detail { text-align: right; font-size: 11px; }
+.sb-score { font-size: 16px; font-weight: bold; color: #00ff41; }
+.sb-sub { font-size: 10px; color: rgba(0,255,65,0.4); }
+.sb-row.break-flash { animation: flashGreen 0.6s; }
+.sb-row.fix-flash { animation: flashBlue 0.6s; }
+@keyframes flashGreen {
+  0% { background: rgba(0,255,65,0.2); border-color: #00ff41; }
+  100% { background: rgba(0,255,65,0.03); border-color: transparent; }
+}
+@keyframes flashBlue {
+  0% { background: rgba(0,170,255,0.2); border-color: #0af; }
+  100% { background: rgba(0,255,65,0.03); border-color: transparent; }
+}
+
+/* ─── Event Log ─── */
+.event-log {
+  position: fixed; bottom: 0; left: 0; right: 0; height: 160px;
+  background: rgba(0,0,0,0.6);
+  border-top: 1px solid rgba(0,255,65,0.1);
+  padding: 10px 20px;
+  overflow-y: auto;
+  z-index: 50;
+}
+.event-log .el-title {
+  font-size: 11px; color: rgba(0,255,65,0.4);
+  letter-spacing: 2px; margin-bottom: 6px;
+}
+.event-item {
+  font-size: 12px; padding: 3px 0;
+  border-left: 2px solid rgba(0,255,65,0.2);
+  padding-left: 10px; margin-bottom: 2px;
+  animation: slideIn 0.2s;
+}
+.event-item.break-type { border-left-color: #00ff41; }
+.event-item.fix-type { border-left-color: #0af; }
+.event-item.rank-type { border-left-color: #ffd700; }
+.event-item.status-type { border-left-color: #888; }
+.event-item.round-type { border-left-color: #ffdd00; }
+.event-item .et { color: rgba(0,255,65,0.4); font-size: 10px; }
+.event-item .emsg { color: #ccc; }
+
+@keyframes slideIn { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: translateX(0); } }
+
+/* ─── Labels on canvas ─── */
+.team-label, .challenge-label {
+  position: absolute; pointer-events: none;
+  text-align: center;
+  font-size: 12px;
+  text-shadow: 0 0 10px rgba(0,255,65,0.5);
+}
+.team-label .name { font-size: 13px; font-weight: bold; }
+.team-label .score { font-size: 11px; color: rgba(0,255,65,0.7); }
+.challenge-label { color: #ffcc00; font-size: 13px; font-weight: bold; }
+.challenge-label .sub { font-size: 10px; color: rgba(255,204,0,0.5); }
+
+/* ─── Projectile ─── */
+.projectile {
+  position: absolute; pointer-events: none;
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: #00ff41;
+  box-shadow: 0 0 12px #00ff41, 0 0 24px #00ff4188;
+  z-index: 10;
+}
+.projectile.break-shot { background: #00ff41; box-shadow: 0 0 12px #00ff41, 0 0 24px #00ff4188; }
+.projectile.fix-shot { background: #0af; box-shadow: 0 0 12px #0af, 0 0 24px #0af88; }
+
+/* ─── Target hit effect ─── */
+.hit-flash {
+  position: absolute; pointer-events: none;
+  width: 60px; height: 60px;
+  border-radius: 50%;
+  border: 2px solid #00ff41;
+  box-shadow: 0 0 30px #00ff41, inset 0 0 30px rgba(0,255,65,0.2);
+  animation: hitExpand 0.8s forwards;
+  z-index: 5;
+}
+@keyframes hitExpand {
+  0% { transform: scale(0.3); opacity: 1; }
+  100% { transform: scale(2); opacity: 0; }
+}
+.hit-flash.fix-hit { border-color: #0af; box-shadow: 0 0 30px #0af, inset 0 0 30px rgba(0,170,255,0.2); }
+
+/* ─── Scrollbar ─── */
+::-webkit-scrollbar { width: 3px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(0,255,65,0.3); border-radius: 2px; }
+
+/* ─── Connection status ─── */
+.conn-status {
+  position: fixed; bottom: 170px; right: 330px;
+  font-size: 10px; color: rgba(0,255,65,0.3);
+  z-index: 100;
+}
+.conn-status.online { color: #00ff41; }
+.conn-status.offline { color: #ff4444; }
+
+/* ─── Shield effect ─── */
+.shield {
+  position: absolute; pointer-events: none;
+  width: 80px; height: 80px;
+  border-radius: 50%;
+  border: 3px solid rgba(0,170,255,0.6);
+  box-shadow: 0 0 30px rgba(0,170,255,0.3), inset 0 0 30px rgba(0,170,255,0.1);
+  animation: shieldPulse 1s forwards;
+  z-index: 4;
+}
+@keyframes shieldPulse {
+  0% { transform: scale(0.5); opacity: 1; }
+  50% { transform: scale(1.5); opacity: 0.8; }
+  100% { transform: scale(2); opacity: 0; }
+}
+
+/* ─── Team planet styling ─── */
+.team-dot {
+  position: absolute; pointer-events: none;
+  width: 20px; height: 20px;
+  border-radius: 50%;
+  z-index: 3;
+  transition: box-shadow 0.3s;
+}
+.team-dot.online { box-shadow: 0 0 15px rgba(0,255,65,0.4); }
+.team-dot.offline { opacity: 0.4; }
+.team-dot.attacking { animation: pulseDot 0.3s 3; }
+@keyframes pulseDot {
+  0% { box-shadow: 0 0 15px rgba(0,255,65,0.4); }
+  50% { box-shadow: 0 0 30px rgba(0,255,65,0.8), 0 0 60px rgba(255,255,255,0.3); }
+  100% { box-shadow: 0 0 15px rgba(0,255,65,0.4); }
+}
+
+/* ─── Challenge target styling ─── */
+.challenge-dot {
+  position: absolute; pointer-events: none;
+  z-index: 3;
+  transition: transform 0.3s;
+}
+.challenge-dot.hit { animation: targetHit 0.5s; }
+@keyframes targetHit {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.4); filter: brightness(2); }
+  100% { transform: scale(1); }
+}
+</style>
+</head>
+<body>
+
+<div class="top-bar">
+  <div class="title">⚔ 砺剑AWDp</div>
+  <div class="info">
+    <div>轮次 <span id="roundDisplay">1</span></div>
+    <div class="round-badge">
+      剩余 <span id="timeDisplay">--:--</span>
+    </div>
+  </div>
+</div>
+
+<div id="scene"></div>
+
+<div class="scoreboard" id="scoreboard">
+  <div class="sb-title">◈ 排行榜</div>
+  <div id="sbList"></div>
+</div>
+
+<div class="event-log" id="eventLog">
+  <div class="el-title">◈ 实时事件</div>
+  <div id="eventList"></div>
+</div>
+
+<div class="conn-status" id="connStatus">● 连接中...</div>
+
+<script>
+// ─── Configuration ───
+const WS_URL = 'ws://' + location.hostname + ':8080/websocket';
+const API_URL = '/api/viz_data';
+const SCENE = document.getElementById('scene');
+const COLORS = [
+  '#00ff41', '#ff6600', '#00aaff', '#ff44ff',
+  '#ffdd00', '#44ffaa', '#ff8844', '#aa44ff',
+];
+
+// ─── State ───
+let teams = {};
+let challenges = {};
+let planetPositions = {};
+let targetPositions = {};
+let teamColors = {};
+let ws = null;
+let roundNum = 1;
+
+// ─── Stars background ───
+function initStars() {
+  const canvas = document.createElement('canvas');
+  canvas.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:0;';
+  canvas.width = SCENE.clientWidth;
+  canvas.height = SCENE.clientHeight;
+  SCENE.appendChild(canvas);
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#fff';
+  for (let i = 0; i < 200; i++) {
+    const x = Math.random() * canvas.width;
+    const y = Math.random() * canvas.height;
+    const r = Math.random() * 1.5 + 0.3;
+    ctx.globalAlpha = Math.random() * 0.6 + 0.2;
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+// ─── Position calculation ───
+function calcPositions() {
+  const rect = SCENE.getBoundingClientRect();
+  const cx = rect.width / 2;
+  const cy = rect.height / 2;
+  const teamRadius = Math.min(rect.width, rect.height) * 0.32;
+  const targetRadius = Math.min(rect.width, rect.height) * 0.08;
+
+  // Teams in semicircle at bottom
+  const teamIds = Object.keys(teams).filter(id => teams[id].name !== 'admin');
+  const count = teamIds.length;
+  const startAngle = Math.PI * 0.15;
+  const endAngle = Math.PI * 0.85;
+
+  teamIds.forEach((id, i) => {
+    const angle = startAngle + (endAngle - startAngle) * i / Math.max(count - 1, 1);
+    const x = cx + teamRadius * Math.cos(angle);
+    const y = cy + teamRadius * Math.sin(angle);
+    planetPositions[id] = { x, y, angle };
+  });
+
+  // Challenges in center
+  const chIds = Object.keys(challenges);
+  chIds.forEach((id, i) => {
+    const angle = (Math.PI * 2 / chIds.length) * i - Math.PI / 2;
+    const x = cx + targetRadius * Math.cos(angle);
+    const y = cy + targetRadius * Math.sin(angle);
+    targetPositions[id] = { x, y };
+  });
+}
+
+// ─── Render teams on scene ───
+function renderTeams() {
+  // Remove old team labels
+  document.querySelectorAll('.team-label, .team-dot').forEach(el => el.remove());
+
+  const teamIds = Object.keys(teams).filter(id => teams[id].name !== 'admin');
+  teamIds.forEach(id => {
+    const t = teams[id];
+    const pos = planetPositions[id];
+    if (!pos) return;
+
+    const color = teamColors[id] || '#00ff41';
+    const isOnline = t._status !== 'offline';
+
+    // Dot
+    const dot = document.createElement('div');
+    dot.className = 'team-dot ' + (isOnline ? 'online' : 'offline');
+    dot.id = 'td-' + id;
+    dot.style.cssText = `left:${pos.x-10}px;top:${pos.y-10}px;background:${color};`;
+    SCENE.appendChild(dot);
+
+    // Label
+    const label = document.createElement('div');
+    label.className = 'team-label';
+    label.id = 'tl-' + id;
+    label.style.cssText = `left:${pos.x-60}px;top:${pos.y+16}px;width:120px;color:${color};`;
+    label.innerHTML = `<div class="name">${t.name}</div><div class="score" id="ts-${id}">${t.score||0}pt</div>`;
+    SCENE.appendChild(label);
+  });
+}
+
+// ─── Render challenges on scene ───
+function renderChallenges() {
+  document.querySelectorAll('.challenge-label, .challenge-dot').forEach(el => el.remove());
+
+  Object.keys(challenges).forEach(id => {
+    const ch = challenges[id];
+    const pos = targetPositions[id];
+    if (!pos) return;
+
+    // Target dot (diamond shape)
+    const dot = document.createElement('div');
+    dot.className = 'challenge-dot';
+    dot.id = 'cd-' + id;
+    const s = 18;
+    dot.style.cssText = `left:${pos.x-s}px;top:${pos.y-s}px;width:${s*2}px;height:${s*2}px;` +
+      `background: linear-gradient(135deg, #ffcc00 25%, #ff8800 75%);` +
+      `clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);` +
+      `box-shadow: 0 0 20px rgba(255,204,0,0.4);`;
+    SCENE.appendChild(dot);
+
+    // Label
+    const label = document.createElement('div');
+    label.className = 'challenge-label';
+    label.id = 'cl-' + id;
+    label.style.cssText = `left:${pos.x-60}px;top:${pos.y+s+8}px;width:120px;`;
+    label.innerHTML = `${ch.title}<div class="sub">${ch.category||'web'}</div>`;
+    SCENE.appendChild(label);
+  });
+}
+
+// ─── Update scoreboard ───
+function renderScoreboard() {
+  const list = document.getElementById('sbList');
+  const sorted = Object.values(teams)
+    .filter(t => t.name !== 'admin')
+    .sort((a, b) => (b.score||0) - (a.score||0));
+
+  list.innerHTML = sorted.map((t, i) => {
+    const rankClass = i === 0 ? 'top1' : i === 1 ? 'top2' : i === 2 ? 'top3' : '';
+    const color = teamColors[t.id] || '#00ff41';
+    return `<div class="sb-row" id="sbr-${t.id}">
+      <div class="sb-rank ${rankClass}">${i+1}</div>
+      <div class="sb-name" style="color:${color}">${t.name}</div>
+      <div class="sb-detail">
+        <div class="sb-score">${Math.round(t.score||0)}</div>
+        <div class="sb-sub">A${Math.round(t.attack_score||0)} D${Math.round(t.defense_score||0)}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ─── Update team score text on scene ───
+function updateTeamScore(id) {
+  const el = document.getElementById('ts-' + id);
+  if (el && teams[id]) el.textContent = (teams[id].score||0) + 'pt';
+}
+
+// ─── Add event to log ───
+function addEvent(type, msg) {
+  const list = document.getElementById('eventList');
+  const div = document.createElement('div');
+  div.className = 'event-item ' + type + '-type';
+  const time = new Date().toLocaleTimeString();
+  div.innerHTML = `<span class="et">[${time}]</span> <span class="emsg">${msg}</span>`;
+  list.insertBefore(div, list.firstChild);
+  if (list.children.length > 100) list.removeChild(list.lastChild);
+}
+
+// ─── Animate break (team → challenge) ───
+function animateBreak(teamId, challengeId) {
+  const from = planetPositions[teamId];
+  const to = targetPositions[challengeId];
+  if (!from || !to) return;
+
+  const color = teamColors[teamId] || '#00ff41';
+
+  // Launch multiple projectiles
+  for (let k = 0; k < 3; k++) {
+    setTimeout(() => {
+      const p = document.createElement('div');
+      p.className = 'projectile break-shot';
+      p.style.cssText = `left:${from.x-3}px;top:${from.y-3}px;`;
+      SCENE.appendChild(p);
+
+      const dx = to.x - from.x;
+      const dy = to.y - from.y;
+      const duration = 400;
+      const start = performance.now();
+
+      function move(now) {
+        const t = Math.min((now - start) / duration, 1);
+        const ease = t < 0.5 ? 2*t*t : -1+(4-2*t)*t;
+        const x = from.x + dx * ease;
+        const y = from.y + dy * ease - 30 * Math.sin(t * Math.PI);
+        p.style.left = (x - 3) + 'px';
+        p.style.top = (y - 3) + 'px';
+        if (t < 1) requestAnimationFrame(move);
+        else {
+          p.remove();
+          // Hit effect on challenge
+          if (k === 2) { // last projectile triggers hit
+            const hit = document.createElement('div');
+            hit.className = 'hit-flash';
+            hit.style.cssText = `left:${to.x-30}px;top:${to.y-30}px;`;
+            SCENE.appendChild(hit);
+            setTimeout(() => hit.remove(), 800);
+
+            // Flash challenge dot
+            const cd = document.getElementById('cd-' + challengeId);
+            if (cd) { cd.classList.remove('hit'); void cd.offsetWidth; cd.classList.add('hit'); }
+          }
+        }
+      }
+      requestAnimationFrame(move);
+    }, k * 120);
+  }
+
+  // Flash team dot
+  const dot = document.getElementById('td-' + teamId);
+  if (dot) { dot.classList.remove('attacking'); void dot.offsetWidth; dot.classList.add('attacking'); }
+
+  // Flash scoreboard row
+  const row = document.getElementById('sbr-' + teamId);
+  if (row) { row.classList.remove('break-flash'); void row.offsetWidth; row.classList.add('break-flash'); }
+
+  addEvent('break', `<span style="color:${color}">${teams[teamId]?.name||'#'+teamId}</span> 攻破了 <span style="color:#ffcc00">${challenges[challengeId]?.title||'#'+challengeId}</span>`);
+}
+
+// ─── Animate fix (shield around team) ───
+function animateFix(teamId, challengeId) {
+  const pos = planetPositions[teamId];
+  if (!pos) return;
+
+  const color = teamColors[teamId] || '#00ff41';
+
+  for (let k = 0; k < 2; k++) {
+    setTimeout(() => {
+      const shield = document.createElement('div');
+      shield.className = 'shield';
+      shield.style.cssText = `left:${pos.x-40}px;top:${pos.y-40}px;`;
+      SCENE.appendChild(shield);
+      setTimeout(() => shield.remove(), 1000);
+    }, k * 300);
+  }
+
+  // Flash scoreboard row
+  const row = document.getElementById('sbr-' + teamId);
+  if (row) { row.classList.remove('fix-flash'); void row.offsetWidth; row.classList.add('fix-flash'); }
+
+  addEvent('fix', `<span style="color:${color}">${teams[teamId]?.name||'#'+teamId}</span> 修复了 <span style="color:#ffcc00">${challenges[challengeId]?.title||'#'+challengeId}</span>`);
+}
+
+// ─── Update round display ───
+function updateRound(r) {
+  roundNum = r;
+  document.getElementById('roundDisplay').textContent = r;
+  addEvent('round', `第 ${r} 轮开始`);
+}
+
+// ─── Update time display ───
+function updateTime(t) {
+  const m = Math.floor(t / 60);
+  const s = t % 60;
+  document.getElementById('timeDisplay').textContent = String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+}
+
+// ─── WebSocket ───
+function connectWS() {
+  const status = document.getElementById('connStatus');
+  status.textContent = '● 连接中...';
+  status.className = 'conn-status';
+
+  ws = new WebSocket(WS_URL);
+  ws.onopen = () => {
+    status.textContent = '● 已连接';
+    status.className = 'conn-status online';
+    addEvent('status', 'WebSocket 已连接');
+  };
+  ws.onclose = () => {
+    status.textContent = '● 已断开，5秒后重连';
+    status.className = 'conn-status offline';
+    addEvent('status', '连接断开，正在重连...');
+    setTimeout(connectWS, 5000);
+  };
+  ws.onerror = () => {
+    status.textContent = '● 连接错误';
+    status.className = 'conn-status offline';
+  };
+  ws.onmessage = (msg) => {
+    try {
+      const data = JSON.parse(msg.data);
+      handleMessage(data);
+    } catch(e) {
+      console.log('Parse error:', e);
+    }
+  };
+}
+
+// ─── Handle messages ───
+function handleMessage(data) {
+  switch (data.Type) {
+    case 'init':
+      if (data.Data.Title) {
+        document.querySelector('.title').textContent = '⚔ ' + data.Data.Title;
+      }
+      if (data.Data.Team) {
+        data.Data.Team.forEach(t => {
+          if (teams[t.Id]) {
+            Object.assign(teams[t.Id], t);
+          } else if (t.Name) {
+            teams[t.Id] = { id: t.Id, name: t.Name, score: t.Score || 0, attack_score: 0, defense_score: 0 };
+          }
+        });
+        // Assign colors
+        Object.keys(teams).forEach((id, i) => {
+          if (!teamColors[id] && teams[id].name !== 'admin') {
+            teamColors[id] = COLORS[i % COLORS.length];
+          }
+        });
+        calcPositions();
+        renderTeams();
+        renderScoreboard();
+      }
+      if (data.Data.Time !== undefined) updateTime(data.Data.Time);
+      if (data.Data.Round !== undefined) updateRound(data.Data.Round);
+      addEvent('init', '初始化完成');
+      break;
+
+    case 'rank':
+      if (data.Data.Team) {
+        data.Data.Team.forEach(t => {
+          if (teams[t.Id]) {
+            teams[t.Id].score = t.Score || 0;
+            teams[t.Id].attack_score = t.AttackScore || teams[t.Id].attack_score || 0;
+            teams[t.Id].defense_score = t.DefenseScore || teams[t.Id].defense_score || 0;
+          }
+        });
+        renderScoreboard();
+        Object.keys(teams).forEach(id => updateTeamScore(id));
+      }
+      break;
+
+    case 'attack':
+      // Break event: From=team_id, To=challenge_id
+      const fromId = String(data.Data.From);
+      const toId = String(data.Data.To);
+      if (planetPositions[fromId] && targetPositions[toId]) {
+        animateBreak(fromId, toId);
+      } else {
+        addEvent('status', `攻击事件: team#${fromId} → target#${toId}`);
+      }
+      break;
+
+    case 'fix':
+      // Fix event
+      const fixTeam = String(data.Data.Team);
+      const fixCh = String(data.Data.Challenge);
+      if (planetPositions[fixTeam]) {
+        animateFix(fixTeam, fixCh);
+      }
+      break;
+
+    case 'status':
+      const stId = String(data.Data.Id);
+      if (teams[stId]) {
+        teams[stId]._status = data.Data.Status;
+        const dot = document.getElementById('td-' + stId);
+        if (dot) {
+          dot.className = 'team-dot ' + (data.Data.Status === 'online' ? 'online' : 'offline');
+        }
+        addEvent('status', `${teams[stId].name} → ${data.Data.Status === 'online' ? '上线' : '离线'}`);
+      }
+      break;
+
+    case 'round':
+      updateRound(data.Data.Round);
+      break;
+
+    case 'time':
+      updateTime(data.Data.Time);
+      break;
+
+    case 'clear':
+    case 'clearAll':
+      // Reset attack states
+      addEvent('status', '状态已重置');
+      break;
+
+    default:
+      console.log('Unknown event:', data.Type);
+  }
+}
+
+// ─── Fetch initial data from Flask API ───
+async function init() {
+  initStars();
+
+  // Fetch teams and challenges from platform
+  try {
+    const resp = await fetch(API_URL);
+    const data = await resp.json();
+    data.teams.forEach(t => {
+      teams[t.id] = t;
+      teams[t.id]._status = 'online';
+    });
+    data.challenges.forEach(c => {
+      challenges[c.id] = c;
+    });
+    // Assign colors
+    Object.keys(teams).forEach((id, i) => {
+      if (!teamColors[id] && teams[id].name !== 'admin') {
+        teamColors[id] = COLORS[i % COLORS.length];
+      }
+    });
+    console.log('Loaded', Object.keys(teams).length, 'teams,', Object.keys(challenges).length, 'challenges');
+  } catch(e) {
+    console.log('Failed to fetch API data, using defaults');
+  }
+
+  calcPositions();
+  renderTeams();
+  renderChallenges();
+  renderScoreboard();
+
+  // Connect WebSocket
+  connectWS();
+}
+
+// ─── Handle resize ───
+window.addEventListener('resize', () => {
+  initStars();
+  calcPositions();
+  renderTeams();
+  renderChallenges();
+});
+
+// ─── Start ───
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>

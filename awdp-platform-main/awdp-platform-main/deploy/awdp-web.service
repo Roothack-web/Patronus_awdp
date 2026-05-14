@@ -1,0 +1,17 @@
+[Unit]
+Description=AWDP Platform Web (Gunicorn)
+After=network.target docker.service
+Wants=docker.service
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/awdp
+Environment=PATH=/opt/awdp/venv/bin:/usr/bin
+Environment=PYTHONPATH=/opt/awdp
+ExecStart=/opt/awdp/venv/bin/gunicorn --bind 0.0.0.0:5000 --workers 4 --timeout 60 run:app
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

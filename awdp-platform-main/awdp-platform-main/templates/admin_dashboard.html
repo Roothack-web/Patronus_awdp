@@ -1,0 +1,136 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h2 class="mb-0">管理后台</h2>
+  <div>
+    <a class="btn btn-sm btn-outline-secondary" href="/admin/challenges">题目管理</a>
+    <a class="btn btn-sm btn-outline-secondary" href="/admin/teams">队伍管理</a>
+    <a class="btn btn-sm btn-outline-secondary" href="/admin/containers">容器管理</a>
+    <a class="btn btn-sm btn-outline-secondary" href="/admin/scores">计分日志</a>
+  </div>
+</div>
+
+<div class="row mb-4">
+  <div class="col-md-2 col-6 mb-2">
+    <div class="card text-center">
+      <div class="card-body">
+        <h3 class="mb-0">{{ stats.teams }}</h3>
+        <small class="text-muted">队伍</small>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-2 col-6 mb-2">
+    <div class="card text-center">
+      <div class="card-body">
+        <h3 class="mb-0">{{ stats.challenges }}</h3>
+        <small class="text-muted">题目</small>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-2 col-6 mb-2">
+    <div class="card text-center">
+      <div class="card-body">
+        <h3 class="mb-0">{{ stats.containers }}</h3>
+        <small class="text-muted">容器</small>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-2 col-6 mb-2">
+    <div class="card text-center">
+      <div class="card-body">
+        <h3 class="mb-0 text-success">{{ stats.running_containers }}</h3>
+        <small class="text-muted">运行中</small>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-2 col-6 mb-2">
+    <div class="card text-center">
+      <div class="card-body">
+        <h3 class="mb-0">{{ stats.submissions }}</h3>
+        <small class="text-muted">提交</small>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-2 col-6 mb-2">
+    <div class="card text-center">
+      <div class="card-body">
+        <h3 class="mb-0">{{ stats.defenses }}</h3>
+        <small class="text-muted">防护</small>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-md-6">
+    <div class="card mb-3">
+      <div class="card-body">
+        <h5 class="card-title">系统状态</h5>
+        <table class="table table-sm mb-0">
+          <tr><td>Scheduler</td>
+            <td>
+              {% if scheduler_last_run %}
+                <span class="badge bg-success">运行中</span>
+                <small class="text-muted">最后: {{ scheduler_last_run[:19] }}</small>
+              {% else %}
+                <span class="badge bg-secondary">未启动</span>
+              {% endif %}
+            </td></tr>
+          <tr><td>待评估防护</td>
+            <td>
+              {% if pending_defenses %}
+                <a href="/admin/defenses/pending" class="badge bg-warning text-dark text-decoration-none">{{ pending_defenses }} 个待处理</a>
+              {% else %}
+                <span class="badge bg-success">无</span>
+              {% endif %}
+            </td></tr>
+          <tr><td>健康检查</td><td><a href="/_health" target="_blank" class="small">/_health</a></td></tr>
+        </table>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-body">
+        <h5 class="card-title">快捷操作</h5>
+        <div class="list-group">
+          <a href="/admin/challenges" class="list-group-item list-group-item-action">题目管理</a>
+          <a href="/admin/contests" class="list-group-item list-group-item-action">比赛管理</a>
+          <a href="/admin/defenses" class="list-group-item list-group-item-action">防护包评估</a>
+          <a href="/admin/defenses/pending" class="list-group-item list-group-item-action">待评估队列 {% if pending_defenses %}<span class="badge bg-warning text-dark">{{ pending_defenses }}</span>{% endif %}</a>
+          <a href="/admin/submissions" class="list-group-item list-group-item-action">提交记录</a>
+          <a href="/admin/challenges/add" class="list-group-item list-group-item-action">添加题目</a>
+        </div>
+        <hr>
+        <h6>数据导出</h6>
+        <div class="list-group">
+          <a href="/admin/export/scores.csv" class="list-group-item list-group-item-action">导出成绩 CSV</a>
+          <a href="/admin/export/submissions.csv" class="list-group-item list-group-item-action">导出提交 CSV</a>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-6">
+    <div class="card">
+      <div class="card-body">
+        <h5 class="card-title">最近提交</h5>
+        {% if recent_submissions %}
+          <table class="table table-sm">
+            <thead><tr><th>队伍</th><th>题目</th><th>结果</th><th>时间</th></tr></thead>
+            <tbody>
+            {% for s in recent_submissions %}
+              <tr>
+                <td>{{ s.team.name if s.team else '?' }}</td>
+                <td>{{ s.challenge.title if s.challenge else '?' }}</td>
+                <td>{% if s.is_correct %}<span class="badge bg-success">正确</span>{% else %}<span class="badge bg-secondary">错误</span>{% endif %}</td>
+                <td class="small">{{ s.submitted_at }}</td>
+              </tr>
+            {% endfor %}
+            </tbody>
+          </table>
+        {% else %}
+          <p class="text-muted">暂无提交记录</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

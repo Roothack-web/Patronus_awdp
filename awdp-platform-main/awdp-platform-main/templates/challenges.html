@@ -1,0 +1,83 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2 class="mb-4">题目列表</h2>
+
+{% for contest in contests %}
+  {% set chs = contest.challenges.filter_by(enabled=True).all() %}
+  {% if chs %}
+  <div class="card contest-card mb-3">
+    <div class="card-body">
+      <h5 class="card-title">{{ contest.name }}
+        <small class="text-muted">
+          {% if contest.status == 'running' %}
+            <span class="badge bg-success">进行中</span>
+          {% elif contest.status == 'finished' %}
+            <span class="badge bg-secondary">已结束</span>
+          {% else %}
+            <span class="badge bg-warning text-dark">未开始</span>
+          {% endif %}
+        </small>
+      </h5>
+      {% if contest.description %}<p class="card-text muted-small">{{ contest.description }}</p>{% endif %}
+      <div class="row">
+      {% for c in chs %}
+        <div class="col-md-6 mb-2">
+          <div class="card">
+            <div class="card-body">
+              <div class="d-flex justify-content-between align-items-start">
+                <div>
+                  <h6 class="card-title mb-1">
+                    <a href="/challenge/{{ c.id }}" class="text-decoration-none">{{ c.title }}</a>
+                    <small class="badge bg-{{ 'danger' if c.category == 'pwn' else 'info' }}">{{ c.category.upper() }}</small>
+                  </h6>
+                  <p class="mb-0 small text-muted">{{ c.description[:100] if c.description else '' }}</p>
+                </div>
+                <div class="text-end">
+                  <span class="badge bg-dark">{{ c.initial_score or c.points }} 分</span>
+                  {% if team_containers and c.id in team_containers %}
+                    {% set ct = team_containers[c.id] %}
+                    {% if ct.status == 'running' %}
+                      <span class="badge bg-success">运行中</span>
+                    {% elif ct.status == 'stopped' %}
+                      <span class="badge bg-secondary">已停止</span>
+                    {% endif %}
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+      </div>
+    </div>
+  </div>
+  {% endif %}
+{% endfor %}
+
+{% if uncat %}
+<div class="card mb-3">
+  <div class="card-body">
+    <h5 class="card-title">未分组题目</h5>
+    <div class="row">
+    {% for c in uncat %}
+      <div class="col-md-6 mb-2">
+        <div class="card">
+          <div class="card-body">
+            <h6 class="card-title mb-1">
+              <a href="/challenge/{{ c.id }}" class="text-decoration-none">{{ c.title }}</a>
+              <small class="badge bg-{{ 'danger' if c.category == 'pwn' else 'info' }}">{{ c.category.upper() }}</small>
+            </h6>
+            <p class="mb-0 small text-muted">{{ (c.description or '')[:100] }}</p>
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+    </div>
+  </div>
+</div>
+{% endif %}
+
+{% if not contests and not uncat %}
+<p class="text-muted">暂无可用题目。</p>
+{% endif %}
+{% endblock %}

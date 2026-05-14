@@ -1,0 +1,17 @@
+<div class="card">
+  <div class="card-body">
+    <h5 class="card-title">评估日志 — 防护 #{{ defense.id }}</h5>
+    <p>状态:
+      {% if defense.status == 'success' %}
+        <span class="badge bg-success">修复成功</span>
+      {% elif defense.status == 'failed' %}
+        <span class="badge bg-danger">被攻破</span>
+      {% elif defense.status == 'error' %}
+        <span class="badge bg-danger">服务异常</span>
+      {% else %}
+        <span class="badge bg-secondary">{{ defense.status }}</span>
+      {% endif %}
+    </p>
+    <pre class="small bg-light p-2 rounded" style="white-space:pre-wrap;word-break:break-word;max-height:500px;overflow-y:auto;">{{ defense.result or '（无日志）' }}</pre>
+  </div>
+</div>

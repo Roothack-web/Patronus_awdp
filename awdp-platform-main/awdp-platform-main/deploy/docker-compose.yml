@@ -1,0 +1,55 @@
+# ============================================================
+# 砺剑AWDp — Docker Compose Production Deployment
+# ============================================================
+# Prerequisites:
+#   1. Load challenge images:
+#      docker load -i backup/<backup>/images/awdp-sqli.tar
+#      docker load -i backup/<backup>/images/awdp-ssrf.tar
+#   2. Run: docker compose up -d --build
+# ============================================================
+services:
+  platform:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    container_name: awdp-platform
+    ports:
+      - "5000:5000"
+    volumes:
+      # Docker socket: allows platform to create/manage challenge containers
+      - /var/run/docker.sock:/var/run/docker.sock
+      # Persist database and uploads
+      - awdp_data:/app/awdp.db
+      - awdp_uploads:/app/instance/uploads
+      # Shared team.txt for Asteroid visualization
+      - asteroid_teamdata:/app/teamdata
+    environment:
+      - PUBLIC_HOST=${PUBLIC_HOST:-127.0.0.1}
+      - SECRET_KEY=${SECRET_KEY:-awdp-secret-key-change-in-production}
+      - ASTEROID_URL=http://asteroid-backend:8080
+      - ASTEROID_TOKEN=${ASTEROID_TOKEN:-}
+      - TEAMDATA_DIR=/app/teamdata
+      - FLASK_ENV=production
+    restart: unless-stopped
+    depends_on:
+      - asteroid-backend
+
+  asteroid-backend:
+    build:
+      context: ./asteroid-backend
+    container_name: awdp-asteroid
+    ports:
+      - "8080:8080"
+    volumes:
+      - asteroid_teamdata:/app/teamdata
+    environment:
+      - ASTEROID_TOKEN=${ASTEROID_TOKEN:-}
+    command: >
+      sh -c 'cp /app/teamdata/team.txt /app/team.txt 2>/dev/null || true;
+             ./asteroid-backend -title "AWDP Demo" -port "8080" -token "${ASTEROID_TOKEN}"'
+    restart: unless-stopped
+
+volumes:
+  awdp_data:
+  awdp_uploads:
+  asteroid_teamdata:

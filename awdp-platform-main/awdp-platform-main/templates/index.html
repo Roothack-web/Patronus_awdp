@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="text-center py-3">
+  <h1 class="display-4">砺剑AWDp</h1>
+  <p class="lead text-muted">Attack With Defense Plus — 砺剑铸盾，攻防制胜</p>
+  <hr class="my-4">
+</div>
+
+{% if contests %}
+<div class="row row-cols-1 row-cols-md-2 g-4">
+  {% for contest in contests %}
+  <div class="col">
+    <a href="/contest/{{ contest.id }}" class="text-decoration-none">
+      <div class="card h-100 contest-card">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-start">
+            <h5 class="card-title mb-1">{{ contest.name }}</h5>
+            {% if contest.status == 'running' %}
+              <span class="badge bg-success fs-6">进行中</span>
+            {% elif contest.status == 'finished' %}
+              <span class="badge bg-secondary fs-6">已结束</span>
+            {% else %}
+              <span class="badge bg-warning text-dark fs-6">未开始</span>
+            {% endif %}
+          </div>
+          {% if contest.description %}
+            <p class="card-text text-muted small mt-2">{{ contest.description[:200] }}</p>
+          {% endif %}
+          <div class="text-muted small mt-2">
+            {% set ch_count = contest.challenges.filter_by(enabled=True).count() %}
+            <span>{{ ch_count }} 道题目</span>
+            {% if contest.start_at %}
+              <span class="ms-3">开始: {{ contest.start_at.strftime('%m-%d %H:%M') }}</span>
+            {% endif %}
+            {% if contest.end_at %}
+              <span class="ms-3">结束: {{ contest.end_at.strftime('%m-%d %H:%M') }}</span>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </a>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="text-center py-5">
+  <p class="text-muted fs-5">暂无可用比赛</p>
+</div>
+{% endif %}
+
+{% if current_user.is_authenticated %}
+<div class="mt-4 text-center">
+  <a href="/dashboard" class="btn btn-outline-primary">我的仪表盘</a>
+  <a href="/leaderboard" class="btn btn-outline-secondary ms-2">排行榜</a>
+</div>
+{% else %}
+<div class="mt-4 text-center">
+  <a href="/auth/register" class="btn btn-primary btn-lg me-2">注册队伍</a>
+  <a href="/auth/login" class="btn btn-outline-primary btn-lg">登录</a>
+</div>
+{% endif %}
+{% endblock %}

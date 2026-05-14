@@ -1,0 +1,142 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>队伍仪表盘</h2>
+
+<div class="row mb-4">
+  <div class="col-md-3">
+    <div class="card text-center">
+      <div class="card-body">
+        <h5 class="card-title text-muted">总分</h5>
+        <p class="display-6">{{ "%.1f"|format(team.score or 0) }}</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card text-center">
+      <div class="card-body">
+        <h5 class="card-title text-muted">攻击分 (Break)</h5>
+        <p class="display-6 text-success">{{ "%.1f"|format(team.attack_score or 0) }}</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card text-center">
+      <div class="card-body">
+        <h5 class="card-title text-muted">防御分 (Fix)</h5>
+        <p class="display-6 text-primary">{{ "%.1f"|format(team.defense_score or 0) }}</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card text-center">
+      <div class="card-body">
+        <h5 class="card-title text-muted">活跃容器</h5>
+        <p class="display-6">{{ active_containers }} / {{ containers|length }}</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row mb-4">
+  <div class="col-md-6">
+    <div class="card">
+      <div class="card-body">
+        <h5 class="card-title">我的容器</h5>
+        {% if containers %}
+          <table class="table table-sm">
+            <thead><tr><th>题目</th><th>状态</th><th>地址</th><th>Flag 版本</th></tr></thead>
+            <tbody>
+            {% for c in containers %}
+              <tr>
+                <td><a href="/challenge/{{ c.challenge_id }}">{{ c.challenge.title if c.challenge else '?' }}</a></td>
+                <td>
+                  {% if c.status == 'running' %}
+                    <span class="badge bg-success">运行中</span>
+                  {% elif c.status == 'stopped' %}
+                    <span class="badge bg-secondary">已停止</span>
+                  {% else %}
+                    <span class="badge bg-warning text-dark">{{ c.status }}</span>
+                  {% endif %}
+                </td>
+                <td><code>{{ c.public_host }}:{{ c.public_port }}</code></td>
+                <td>v{{ c.flag_version }}</td>
+              </tr>
+            {% endfor %}
+            </tbody>
+          </table>
+        {% else %}
+          <p class="text-muted">暂无容器，请前往题目页启动。</p>
+        {% endif %}
+        <a href="/challenges" class="btn btn-sm btn-primary">前往题目</a>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-6">
+    <div class="card mb-3">
+      <div class="card-body">
+        <h5 class="card-title">最近防护状态</h5>
+        {% if recent_defenses %}
+          <table class="table table-sm">
+            <thead><tr><th>题目</th><th>状态</th><th>得分</th><th>时间</th></tr></thead>
+            <tbody>
+            {% for d in recent_defenses %}
+              <tr>
+                <td>{{ d.challenge.title if d.challenge else '?' }}</td>
+                <td>
+                  {% if d.status == 'success' %}
+                    <span class="badge bg-success">修复成功</span>
+                  {% elif d.status == 'failed' %}
+                    <span class="badge bg-danger">被攻破</span>
+                  {% elif d.status == 'error' %}
+                    <span class="badge bg-danger">异常</span>
+                  {% elif d.status in ('running', 'queued') %}
+                    <span class="badge bg-warning text-dark">评估中</span>
+                  {% else %}
+                    <span class="badge bg-secondary">已上传</span>
+                  {% endif %}
+                </td>
+                <td>{% if d.defense_score_earned %}+{{ "%.1f"|format(d.defense_score_earned) }}{% else %}-{% endif %}</td>
+                <td class="small">{{ d.created_at.strftime('%m-%d %H:%M') }}</td>
+              </tr>
+            {% endfor %}
+            </tbody>
+          </table>
+        {% else %}
+          <p class="text-muted">暂无防护记录</p>
+        {% endif %}
+        <a href="/challenges" class="btn btn-sm btn-outline-primary">上传防护包</a>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-body">
+        <h5 class="card-title">最近得分记录</h5>
+        {% if score_logs %}
+          <table class="table table-sm">
+            <thead><tr><th>类型</th><th>分值</th><th>原因</th><th>时间</th></tr></thead>
+            <tbody>
+            {% for log in score_logs %}
+              <tr>
+                <td>
+                  {% if log.score_type == 'attack' %}
+                    <span class="badge bg-success">攻击</span>
+                  {% elif log.score_type == 'defense' %}
+                    <span class="badge bg-primary">防御</span>
+                  {% elif log.score_type == 'penalty' %}
+                    <span class="badge bg-danger">扣分</span>
+                  {% endif %}
+                </td>
+                <td>{{ "+" if log.score_delta > 0 else "" }}{{ "%.1f"|format(log.score_delta) }}</td>
+                <td>{{ log.reason }}</td>
+                <td class="small">{{ log.created_at }}</td>
+              </tr>
+            {% endfor %}
+            </tbody>
+          </table>
+        {% else %}
+          <p class="text-muted">暂无得分记录</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

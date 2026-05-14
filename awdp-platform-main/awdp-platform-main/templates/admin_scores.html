@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+{% import '_pagination.html' as pager %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h2 class="mb-0">管理员 - 计分日志</h2>
+  <a class="btn btn-sm btn-secondary" href="/admin">管理首页</a>
+</div>
+
+<div class="card">
+  <div class="card-body p-0">
+    <table class="table table-hover mb-0">
+      <thead>
+        <tr><th>ID</th><th>队伍</th><th>类型</th><th>分值</th><th>变化前</th><th>变化后</th><th>原因</th><th>时间</th></tr>
+      </thead>
+      <tbody>
+      {% for log in logs %}
+        <tr>
+          <td>{{ log.id }}</td>
+          <td>{{ log.team.name if log.team else '?' }}</td>
+          <td>
+            {% if log.score_type == 'attack' %}
+              <span class="badge bg-success">攻击</span>
+            {% elif log.score_type == 'defense' %}
+              <span class="badge bg-primary">防御</span>
+            {% elif log.score_type == 'penalty' %}
+              <span class="badge bg-danger">扣分</span>
+            {% else %}
+              <span class="badge bg-secondary">{{ log.score_type }}</span>
+            {% endif %}
+          </td>
+          <td>{{ "+" if log.score_delta > 0 else "" }}{{ "%.1f"|format(log.score_delta) }}</td>
+          <td>{{ "%.1f"|format(log.score_before) }}</td>
+          <td>{{ "%.1f"|format(log.score_after) }}</td>
+          <td class="small">{{ log.reason }}</td>
+          <td class="small">{{ log.created_at }}</td>
+        </tr>
+      {% else %}
+        <tr><td colspan="8" class="text-center text-muted py-3">暂无计分记录</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{{ pager.render_pagination(pagination, 'admin.scores') }}
+{% endblock %}

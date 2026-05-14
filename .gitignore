@@ -1,0 +1,68 @@
+# Third-party (no license / All Rights Reserved)
+Asteroid-Unity/
+Asteroid-Unity.zip
+
+# Third-party binaries
+ffmpeg-*.zip
+*.exe
+asteroid-local-test/asteroid-backend.exe
+
+# Personal config
+.claude/
+.vs/
+.vscode/
+
+# Python
+__pycache__/
+*.pyc
+venv/
+*.egg-info/
+dist/
+build/
+
+# Database
+*.db
+*.db.bak
+instance/
+
+# Tokens and secrets
+asteroid_token.txt
+**/asteroid_token.txt
+.env
+*.pem
+
+# Backups (large)
+awdp-platform-main/awdp-platform-main/backup/
+
+# Node
+node_modules/
+
+# Internal notes with server IPs
+awdp-platform-main/awdp-platform-main/prompt.md
+awdp-platform-main/awdp-platform-main/prompt2.md
+
+# Temp scripts
+awdp-platform-main/awdp-platform-main/tmp_check.py
+
+# OS junk
+Thumbs.db
+.DS_Store
+*.swp
+*.swo
+新建 文本文档.txt
+
+# IDE
+.idea/
+
+# Build artifacts
+awdp-platform-main/awdp-platform-main/patch_output/
+awdp-platform-main/awdp-platform-main/patch_build/
+awdp-platform-main/awdp-platform-main/build_3/
+
+# Large challenge assets (>100MB, need git-lfs)
+awdp-platform-main/awdp-platform-main/challenges/sqli/web/wordlist.txt
+awdp-platform-main/awdp-platform-main/challenges/sqli/web/hash_dump.txt
+awdp-platform-main/awdp-platform-main/challenges/cc1/jdk-8u65-linux-x64.tar.gz
+*.war
+*.class
+challenges/cc1/target/

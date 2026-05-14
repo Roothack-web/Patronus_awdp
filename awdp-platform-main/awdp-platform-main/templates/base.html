@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>砺剑AWDp 比赛平台</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/custom.css">
+  </head>
+  <body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+      <div class="container">
+        <a class="navbar-brand" href="/">砺剑AWDp</a>
+        {% if active_contest and active_contest.remaining_seconds > 0 %}
+        <span class="badge bg-warning text-dark me-2" id="contestTimer">
+          {{ active_contest.name }}: --
+        </span>
+        {% endif %}
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbars" aria-controls="navbars" aria-expanded="false" aria-label="Toggle navigation">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbars">
+          <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+            <li class="nav-item"><a class="nav-link" href="/">比赛</a></li>
+            <li class="nav-item"><a class="nav-link" href="/leaderboard">排行榜</a></li>
+          </ul>
+          <ul class="navbar-nav mb-2 mb-lg-0">
+            {% if current_user.is_authenticated %}
+              <li class="nav-item"><a class="nav-link" href="/dashboard">
+                {% if current_user.name %}{{ current_user.name }}{% else %}{{ current_user.username }}{% endif %}
+              </a></li>
+              <li class="nav-item"><a class="nav-link" href="/auth/profile">资料</a></li>
+              {% if current_user.is_admin %}
+                <li class="nav-item"><a class="nav-link" href="/admin">管理</a></li>
+              {% endif %}
+              <li class="nav-item"><a class="nav-link" href="/auth/logout">登出</a></li>
+            {% else %}
+              <li class="nav-item"><a class="nav-link" href="/auth/login">登录</a></li>
+              <li class="nav-item"><a class="nav-link" href="/auth/register">注册</a></li>
+            {% endif %}
+          </ul>
+        </div>
+      </div>
+    </nav>
+
+    <main class="container py-4">
+      {% with messages = get_flashed_messages() %}
+        {% if messages %}
+          {% for m in messages %}
+            <div class="alert alert-info alert-dismissible fade show" role="alert">
+              {{ m }}
+              <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
+      {% block content %}{% endblock %}
+    </main>
+
+    <footer class="text-center py-3 mt-4">
+      <div class="container">砺剑AWDp &copy; 2026 — Attack With Defense Plus</div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    {% if active_contest and active_contest.remaining_seconds > 0 %}
+    <script>
+    (function() {
+      var remaining = {{ active_contest.remaining_seconds }};
+      var endAt = new Date("{{ active_contest.end_at }}").getTime();
+      var el = document.getElementById('contestTimer');
+      function tick() {
+        var now = new Date().getTime();
+        var d = Math.max(0, Math.floor((endAt - now) / 1000));
+        if (d <= 0) { el.textContent = '{{ active_contest.name }}: 已结束'; return; }
+        var h = Math.floor(d / 3600);
+        var m = Math.floor((d % 3600) / 60);
+        var s = d % 60;
+        el.textContent = '{{ active_contest.name }}: ' +
+          String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+      }
+      tick();
+      setInterval(tick, 1000);
+    })();
+    </script>
+    {% endif %}
+    {% block scripts %}{% endblock %}
+  </body>
+</html>

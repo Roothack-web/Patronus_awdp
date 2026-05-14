@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h2 class="mb-0">管理员 - 轮次管理</h2>
+  <a class="btn btn-sm btn-secondary" href="/admin/contests">返回比赛列表</a>
+</div>
+
+<div class="card mb-3">
+  <div class="card-body">
+    <h5 class="card-title">{{ contest.name }}</h5>
+    <p class="muted-small">{{ contest.description or '' }}</p>
+    <div class="row">
+      <div class="col-md-5">
+        <h6>添加轮次</h6>
+        <form method="post">
+          {{ form.hidden_tag() }}
+          <div class="mb-2">{{ form.name.label }} {{ form.name(class_='form-control', placeholder='如: 第1轮') }}</div>
+          <div class="mb-2">{{ form.start_at.label }} <input type="datetime-local" name="start_at" class="form-control"></div>
+          <div class="mb-2">{{ form.end_at.label }} <input type="datetime-local" name="end_at" class="form-control"></div>
+          <div class="mb-2">{{ form.multiplier.label }} {{ form.multiplier(class_='form-control') }}</div>
+          <div>{{ form.submit(class_='btn btn-primary') }}</div>
+        </form>
+      </div>
+      <div class="col-md-7">
+        <h6>已有轮次</h6>
+        <table class="table table-sm">
+          <thead><tr><th>名称</th><th>时间</th><th>倍率</th><th>状态</th><th>操作</th></tr></thead>
+          <tbody>
+          {% for r in rounds %}
+            <tr>
+              <td>{{ r.name }}</td>
+              <td class="small">{{ r.start_at }} — {{ r.end_at }}</td>
+              <td>{{ r.multiplier }}</td>
+              <td>
+                {% if r.status == 'running' %}
+                  <span class="badge bg-success">进行中</span>
+                {% elif r.status == 'finished' %}
+                  <span class="badge bg-secondary">已结束</span>
+                {% else %}
+                  <span class="badge bg-warning text-dark">待开始</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if r.status == 'pending' %}
+                  <form method="post" action="/admin/rounds/{{ r.id }}/start" style="display:inline">
+                    <button class="btn btn-sm btn-success">开始</button>
+                  </form>
+                {% elif r.status == 'running' %}
+                  <form method="post" action="/admin/rounds/{{ r.id }}/end" style="display:inline">
+                    <button class="btn btn-sm btn-danger">结束</button>
+                  </form>
+                {% endif %}
+              </td>
+            </tr>
+          {% else %}
+            <tr><td colspan="5" class="text-center text-muted">暂无轮次</td></tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

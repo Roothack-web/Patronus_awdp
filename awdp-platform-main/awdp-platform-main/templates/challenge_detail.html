@@ -1,0 +1,264 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="row">
+  <div class="col-md-8">
+    <h2>{{ challenge.title }}
+      <small class="badge bg-{{ 'danger' if challenge.category == 'pwn' else 'info' }}">{{ challenge.category.upper() }}</small>
+      <small class="text-muted">初始 {{ challenge.initial_score or challenge.points }} 分</small>
+    </h2>
+    {% if bloods %}
+    <div class="mb-2 small">
+      {% for b in bloods %}
+        <span class="me-2">
+          {% if b.rank == 1 %}<span class="text-warning">&#9733;</span> First Blood
+          {% elif b.rank == 2 %}<span class="text-secondary">&#9733;</span> Second Blood
+          {% elif b.rank == 3 %}<span class="text-danger">&#9733;</span> Third Blood
+          {% endif %}
+          — <strong>{{ b.team_name }}</strong>
+          <span class="text-muted">({{ b.time.strftime('%H:%M:%S') }})</span>
+        </span>
+      {% endfor %}
+    </div>
+    {% endif %}
+    <div class="mb-3">{{ (challenge.description or '')|replace('\n', '<br>')|safe }}</div>
+
+    <div class="row mb-3">
+      <div class="col-md-6">
+        <div class="card">
+          <div class="card-body">
+            <h5 class="card-title">靶机容器</h5>
+            {% if team and container %}
+              <table class="table table-sm mb-2">
+                <tr><th>状态</th>
+                  <td>
+                    {% if container.status == 'running' %}
+                      <span class="badge bg-success">运行中</span>
+                    {% elif container.status == 'stopped' %}
+                      <span class="badge bg-secondary">已停止</span>
+                    {% elif container.status == 'error' %}
+                      <span class="badge bg-danger">异常</span>
+                    {% else %}
+                      <span class="badge bg-warning text-dark">{{ container.status }}</span>
+                    {% endif %}
+                  </td>
+                </tr>
+                <tr><th>地址</th><td><code>{{ container.public_host }}:{{ container.public_port }}</code></td></tr>
+                <tr><th>Flag 版本</th><td>v{{ container.flag_version }}</td></tr>
+                <tr><th>重置次数</th><td>{{ container.reset_count }}/{{ container.max_resets }}</td></tr>
+              </table>
+
+              <div class="btn-group btn-group-sm w-100" role="group">
+                {% if contest_ended %}
+                  <span class="text-muted small w-100 text-center py-2">比赛已结束，无法操作容器</span>
+                {% elif container.status == 'running' %}
+                  <form method="post" action="/challenge/{{ challenge.id }}/container/stop" style="display:inline">
+                    <button class="btn btn-warning" type="submit">停止容器</button>
+                  </form>
+                  <form method="post" action="/challenge/{{ challenge.id }}/container/reset" style="display:inline"
+                        onsubmit="return confirm('重置容器将清除当前环境，确定继续？')">
+                    <button class="btn btn-outline-danger" type="submit">重置容器</button>
+                  </form>
+                  <form method="post" action="/challenge/{{ challenge.id }}/container/refresh-flag" style="display:inline">
+                    <button class="btn btn-outline-info" type="submit">刷新 Flag</button>
+                  </form>
+                {% elif container.status == 'stopped' %}
+                  <form method="post" action="/challenge/{{ challenge.id }}/container/start" style="display:inline">
+                    <button class="btn btn-success" type="submit">启动容器</button>
+                  </form>
+                  <form method="post" action="/challenge/{{ challenge.id }}/container/reset" style="display:inline"
+                        onsubmit="return confirm('重置容器将清除当前环境，确定继续？')">
+                    <button class="btn btn-outline-danger" type="submit">重置容器</button>
+                  </form>
+                {% else %}
+                  <form method="post" action="/challenge/{{ challenge.id }}/container/start" style="display:inline">
+                    <button class="btn btn-success" type="submit">启动容器</button>
+                  </form>
+                {% endif %}
+              </div>
+
+              {# Flag display removed for production #}
+            {% elif team %}
+              <p class="text-muted">尚未创建容器</p>
+              {% if contest_ended %}
+                <p class="text-muted small">比赛已结束，无法创建容器</p>
+              {% else %}
+              <form method="post" action="/challenge/{{ challenge.id }}/container/start">
+                <button class="btn btn-success" type="submit">创建并启动容器</button>
+              </form>
+              {% endif %}
+            {% elif contest_ended %}
+              <p class="text-muted small">比赛已结束</p>
+            {% else %}
+              <p class="text-muted">请登录后启动容器</p>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-6">
+        <div class="card">
+          <div class="card-body">
+            <h5 class="card-title">提交 Flag</h5>
+            {% if not team %}
+              <p class="text-muted">请先登录</p>
+            {% elif already_correct %}
+              <div class="alert alert-success mb-0">你已正确提交过此题！</div>
+            {% else %}
+              <form method="post">
+                {{ form.hidden_tag() }}
+                <div class="mb-2">
+                  {{ form.flag(class_='form-control', placeholder='输入 Flag 提交') }}
+                </div>
+                <div>{{ form.submit(class_='btn btn-primary btn-sm') }}</div>
+              </form>
+                <small class="text-muted">
+                当前解题队伍: {{ solve_count or 0 }} |
+                当前分值: {{ "%.1f"|format(dynamic_score) if solve_count else (challenge.initial_score or challenge.points) }}
+                </small>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="card mt-2">
+          <div class="card-body">
+            <h5 class="card-title">防御 (Fix)</h5>
+            {% if challenge.is_fixed %}
+              <div class="alert alert-success mb-0">本题已修复，防御成功！</div>
+            {% else %}
+            <p class="small text-muted">下载源码编写补丁，上传修复漏洞获取防御分。</p>
+            <div class="d-flex gap-2">
+              <a href="/challenge/{{ challenge.id }}/source" class="btn btn-outline-info btn-sm">下载源码</a>
+              <a href="/defend/{{ challenge.id }}/upload" class="btn btn-outline-primary btn-sm">上传防护包</a>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {% if submissions %}
+    <div class="card mb-3">
+      <div class="card-body">
+        <h5 class="card-title">最近提交记录</h5>
+        <div class="table-responsive">
+          <table class="table table-sm">
+            <thead><tr><th>队伍</th><th>结果</th><th>得分</th><th>时间</th></tr></thead>
+            <tbody>
+            {% for s in submissions[:20] %}
+              <tr>
+                <td>{{ s.team.name if s.team else '?' }}</td>
+                <td>
+                  {% if s.is_correct %}
+                    <span class="badge bg-success">正确</span>
+                  {% else %}
+                    <span class="badge bg-secondary">错误</span>
+                  {% endif %}
+                </td>
+                <td>{% if s.is_correct %}+{{ "%.1f"|format(s.score_earned) }}{% else %}-{% endif %}</td>
+                <td class="small">{{ s.submitted_at }}</td>
+              </tr>
+            {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    {% if defenses %}
+    <div class="card mb-3">
+      <div class="card-body">
+        <h5 class="card-title">防护记录</h5>
+        <div class="table-responsive">
+          <table class="table table-sm">
+            <thead><tr><th>队伍</th><th>状态</th><th>尝试</th><th>时间</th></tr></thead>
+            <tbody>
+            {% for d in defenses %}
+              <tr>
+                <td>{{ d.team.name if d.team else '?' }}</td>
+                <td>
+                  {% if d.status == 'success' %}
+                    <span class="badge bg-success">修复成功</span>
+                  {% elif d.status == 'failed' %}
+                    <span class="badge bg-danger">被攻破</span>
+                  {% elif d.status == 'error' %}
+                    <span class="badge bg-danger">服务异常</span>
+                  {% elif d.status == 'running' or d.status == 'queued' %}
+                    <span class="badge bg-warning text-dark">评估中</span>
+                  {% else %}
+                    <span class="badge bg-secondary">{{ d.status }}</span>
+                  {% endif %}
+                </td>
+                <td>{{ d.attempt_number }}</td>
+                <td class="small">{{ d.created_at }}</td>
+              </tr>
+            {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  <div class="col-md-4">
+    {% if challenge.contest %}
+    <div class="card mb-3">
+      <div class="card-body">
+        <h5 class="card-title">比赛信息</h5>
+        <p><strong>{{ challenge.contest.name }}</strong></p>
+        {% if active_round %}
+          <p>当前轮次: {{ active_round.name }}</p>
+          <p class="small text-muted">{{ active_round.start_at }} — {{ active_round.end_at }}</p>
+        {% else %}
+          <p class="text-muted small">当前无进行中轮次</p>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+
+    {% if team %}
+    <div class="card mb-3">
+      <div class="card-body">
+        <h5 class="card-title">我的得分</h5>
+        <table class="table table-sm mb-0">
+          <tr><td>攻击分</td><td class="text-end">{{ "%.1f"|format(team.attack_score or 0) }}</td></tr>
+          <tr><td>防御分</td><td class="text-end">{{ "%.1f"|format(team.defense_score or 0) }}</td></tr>
+          <tr><th>总分</th><th class="text-end">{{ "%.1f"|format(team.score or 0) }}</th></tr>
+        </table>
+      </div>
+    </div>
+    {% endif %}
+
+    <div class="card mb-3">
+      <div class="card-body">
+        <h5 class="card-title">题目统计</h5>
+        <table class="table table-sm mb-0">
+          <tr><td>解题队伍</td><td class="text-end">{{ solve_count or 0 }}</td></tr>
+          <tr><td>当前分值</td>
+            <td class="text-end">
+              {% if solve_count %}
+                {{ "%.1f"|format(dynamic_score) }}
+              {% else %}
+                {{ challenge.initial_score or challenge.points }}
+              {% endif %}
+            </td></tr>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-body">
+        <h5 class="card-title">动态积分说明</h5>
+        <p class="small text-muted mb-1">Break 得分 = max(初始分 - (解题数-1) x 递减, 最低分)</p>
+        <p class="small text-muted mb-1">前 20 名解出者额外获得排名加成（5% ~ 3.1%）</p>
+        <p class="small text-muted">Fix 得分 = 每次修复成功获得固定防御分</p>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+{% endblock %}
