@@ -66,3 +66,4 @@ awdp-platform-main/awdp-platform-main/challenges/cc1/jdk-8u65-linux-x64.tar.gz
 *.war
 *.class
 challenges/cc1/target/
+mimo_description.md
